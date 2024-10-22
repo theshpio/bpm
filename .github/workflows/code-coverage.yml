@@ -1,0 +1,50 @@
+name: Code Coverage
+
+on:
+  pull_request:
+  # push:
+  #   branches:
+  #     - main
+    paths:
+      - '**/*.rs'
+      - '!LICENSE'
+      - '!README.md'
+      - '!**/*.md'
+
+jobs:
+  code-coverage:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source $HOME/.cargo/env
+          rustup default stable
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Install protoc (Protocol Buffers compiler)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Run code coverage using external script
+          # Define repo level variable
+        env:
+          SKIP_CRATE: ${{ vars.SKIP_CRATE }}
+        run: |
+          chmod u+x scripts/run_coverage.sh
+          ./scripts/run_coverage.sh
+
+      - name: Upload coverage results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-lcov
+          path: "**/coverage/lcov.info"
