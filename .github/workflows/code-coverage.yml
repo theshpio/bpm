@@ -14,11 +14,29 @@ on:
 jobs:
   code-coverage:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
+    # to run on more different versions for wider coverage
+    # strategy:
+    #   matrix:
+    #     rust: [stable, beta, nighly]
+    # if: ${{ github.event_name == 'pull_request' }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          # Directories to cache
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/bin
+            target
+          # Key based on OS and Cargo.lock hash
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          # Fallback keys
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
       - name: Set up Rust
         run: |
@@ -26,25 +44,29 @@ jobs:
           source $HOME/.cargo/env
           rustup default stable
 
-      - name: Install cargo-tarpaulin
-        run: cargo install cargo-tarpaulin
+      - name: Install cargo-tarpaulin if not cached
+        run: |
+          if ! command -v cargo-tarpaulin &> /dev/null; then
+            echo "cargo-tarpaulin not found, installing..."
+            cargo install cargo-tarpaulin
+          else
+            echo "cargo-tarpaulin is cached."
+          fi
 
       - name: Install protoc (Protocol Buffers compiler)
         run: |
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler
 
+      - name: Install coveralls
+        run: |
+          curl -L https://coveralls.io/coveralls-linux.tar.gz | sudo tar -xz -C /usr/local/bin
+
       - name: Run code coverage using external script
           # Define repo level variable
         env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           SKIP_CRATE: ${{ vars.SKIP_CRATE }}
         run: |
           chmod u+x scripts/run_coverage.sh
           ./scripts/run_coverage.sh
-
-      - name: Upload coverage results
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-lcov
-          path: "**/coverage/lcov.info"

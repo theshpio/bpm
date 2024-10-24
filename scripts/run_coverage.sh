@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# exist the script if any command fails
+set -e
+
 # Check if SKIP_CRATE is set
 if [ -z "$SKIP_CRATE" ]; then
   echo "No crate to skip. Running tarpaulin for all crates."
@@ -23,5 +26,13 @@ for crate in $(find packages -name Cargo.toml -exec dirname {} \;); do
   
   cargo tarpaulin --manifest-path $crate/Cargo.toml --out lcov \
     --output-dir $crate/coverage --exclude-files "/target/**/*" "/tarpaulin_temp/**/*" \
-    --target-dir $crate/tarpaulin_temp --skip-clean || echo "Tarpaulin failed for $CRATE_NAME"
+    --target-dir $crate/tarpaulin_temp --skip-clean 
+    
+  # Check if the coverage report exists and upload it
+  if [ -f "$crate/coverage/lcov.info" ]; then
+    echo "Uploading coverage for $CRATE_NAME"
+    coveralls report "$crate/coverage/lcov.info" --repo-token $COVERALLS_REPO_TOKEN
+  else
+    echo "No lcov.info file found for $CRATE_NAME"
+  fi
 done
