@@ -1,3 +1,5 @@
+[![Code Coverage](https://github.com/theshpio/bpm/actions/workflows/code-coverage.yml/badge.svg)](https://github.com/theshpio/bpm/actions/workflows/code-coverage.yml)$${{\space}}$$
+[![Coverage Status](https://coveralls.io/repos/github/Meta-A/bbpm/badge.svg)](https://coveralls.io/github/Meta-A/bbpm)
 # BPM - Blockchain Package Manager
 
 BPM is a cross-platform software that allows for verifiable, proven and secure package compilation, building, fetching, verification, and deployment.
